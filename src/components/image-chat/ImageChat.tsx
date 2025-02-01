@@ -22,6 +22,7 @@ const ImageChat: React.FC<ImageChatProps> = ({ aiResponse, onAIResponse }) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const previousImagesLength = useRef(0);
   const lastResponseTimestamp = useRef<number>(0);
+  const [finalAnswer, setFinalAnswer] = useState<string>('');
 
   useEffect(() => {
     setConfig({
@@ -61,8 +62,8 @@ const ImageChat: React.FC<ImageChatProps> = ({ aiResponse, onAIResponse }) => {
   useEffect(() => {
     if (aiResponse && aiResponse.timestamp > lastResponseTimestamp.current) {
       lastResponseTimestamp.current = aiResponse.timestamp;
-      const finalResponse = `Image Analysis Result:\n\n${aiResponse.content}`;
-      handleStreamResponse(finalResponse, true);
+      setFinalAnswer(aiResponse.content);
+      handleStreamResponse(aiResponse.content, true);
     }
   }, [aiResponse]);
 
@@ -112,29 +113,20 @@ const ImageChat: React.FC<ImageChatProps> = ({ aiResponse, onAIResponse }) => {
 
   const handleStreamResponse = (response: string, isFinal: boolean) => {
     setIsLoading(true);
-    let currentResponse = '';
-    const words = response.split(' ');
     
-    words.forEach((word, index) => {
-      setTimeout(() => {
-        currentResponse += word + ' ';
-        setMessages(prev => {
-          // Only show messages marked as final
-          if (isFinal) {
-            return [{ 
-              role: 'assistant', 
-              content: currentResponse.trim(), 
-              isFinal: true 
-            }];
-          }
-          return prev;
-        });
+    // Directly set the complete response without artificial delays
+    setMessages([{ 
+      role: 'assistant', 
+      content: response.trim(), 
+      isFinal: true 
+    }]);
+    
+    setIsLoading(false);
+  };
 
-        if (index === words.length - 1) {
-          setIsLoading(false);
-        }
-      }, index * 50);
-    });
+  const formatMathText = (text: string) => {
+    // Replace *text* with proper italic styling
+    return text.replace(/\*(.*?)\*/g, '<em>$1</em>');
   };
 
   // Only show final messages
@@ -142,33 +134,46 @@ const ImageChat: React.FC<ImageChatProps> = ({ aiResponse, onAIResponse }) => {
 
   return (
     <div className="image-chat">
-      <div className="setup-section">
-        <div className="upload-section">
-          <ImageUpload />
-        </div>
-        <div className="answer-section">
-          {images.length > 0 && (
-            <div className="images-preview">
-              <div className="image-preview-item">
-                <img src={images[images.length - 1].preview} alt="Uploaded image" />
-              </div>
+      <div className="main-content">
+        <div className="setup-section">
+          {images.length === 0 && (
+            <div className="upload-section">
+              <ImageUpload />
             </div>
           )}
-          <div className="messages-container">
-            {visibleMessages.map((message, index) => (
-              <div key={index} className={`message ${message.role}`}>
-                <div className="message-content">
-                  {message.content}
+          <div className="answer-section">
+            {images.length > 0 && (
+              <div className="images-preview">
+                <div className="image-preview-item">
+                  <img src={images[images.length - 1].preview} alt="Uploaded image" />
                 </div>
               </div>
-            ))}
-            <div ref={messagesEndRef} />
+            )}
           </div>
+          {(isLoading || isProcessing) && (
+            <div className="loading-overlay">
+              <FiLoader className="loading-icon" />
+              <span>{isProcessing ? 'Processing image...' : 'Generating analysis...'}</span>
+            </div>
+          )}
         </div>
-        {(isLoading || isProcessing) && (
-          <div className="loading-overlay">
-            <FiLoader className="loading-icon" />
-            <span>{isProcessing ? 'Processing image...' : 'Generating analysis...'}</span>
+      </div>
+      <div className="side-panel">
+        {images.length === 0 ? (
+          <div className="initial-message">
+            Upload an image to get started
+          </div>
+        ) : (
+          <div className="analysis-content">
+            <div className="final-answer-container">
+              <h3>Analysis</h3>
+              <div 
+                className="final-answer-content"
+                dangerouslySetInnerHTML={{ 
+                  __html: finalAnswer ? formatMathText(finalAnswer) : 'Analysis in progress...'
+                }}
+              />
+            </div>
           </div>
         )}
       </div>

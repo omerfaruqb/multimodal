@@ -88,7 +88,7 @@ function ControlTray({
 
       // Add the text prompt
       parts.push({
-        text: `Önceki görüntü analizi: ${aiResponse.content}\n\nŞimdi, lütfen video akışını analiz et ve görüntü analizine dayanarak içgörüler sağla.`
+        text: `⁠User student has sent you a question; use the provided solution to answer it. The original question is given as image input. For any additional questions, respond initially with just: 'How can I help you?': ${aiResponse.content}`
       });
 
       // Add the image if available
@@ -228,58 +228,6 @@ function ControlTray({
     videoStreams.filter((msr) => msr !== next).forEach((msr) => msr.stop());
   };
 
-  const startStreaming = async () => {
-    if (!videoRef.current || !aiResponse) return;
-
-    try {
-      // First, send the AI response as initial context
-      const initialPrompt = {
-        text: `Önceki görüntü analizi: ${aiResponse.content}\n\nŞimdi, lütfen video akışını analiz et ve görüntü analizine dayanarak içgörüler sağla.`
-      };
-
-      // Send initial prompt
-      client.send([initialPrompt], true);
-
-      // Start video streaming
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: true,
-        audio: false,
-      });
-
-      videoRef.current.srcObject = stream;
-      onVideoStreamChange(stream);
-
-      // Set up media recorder for streaming
-      const mediaRecorder = new MediaRecorder(stream);
-      mediaRecorderRef.current = mediaRecorder;
-
-      mediaRecorder.ondataavailable = async (event) => {
-        if (event.data.size > 0) {
-          const videoBlob = new Blob([event.data], { type: 'video/webm' });
-          // Process and send video data to the streaming service
-          // Add your streaming logic here
-        }
-      };
-
-      mediaRecorder.start(1000); // Collect data every second
-    } catch (error) {
-      console.error('Error starting stream:', error);
-    }
-  };
-
-  const stopStreaming = () => {
-    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
-      mediaRecorderRef.current.stop();
-    }
-
-    if (videoRef.current?.srcObject) {
-      const tracks = (videoRef.current.srcObject as MediaStream).getTracks();
-      tracks.forEach(track => track.stop());
-      videoRef.current.srcObject = null;
-      onVideoStreamChange(null);
-    }
-  };
-
   return (
     <section className="control-tray">
       <canvas style={{ display: "none" }} ref={renderCanvasRef} />
@@ -336,23 +284,6 @@ function ControlTray({
           </button>
         </div>
         <span className="text-indicator">Yayın</span>
-      </div>
-
-      <div className="controls">
-        {supportsVideo && (
-          <>
-            <button 
-              onClick={startStreaming} 
-              disabled={!aiResponse}
-              title={!aiResponse ? "Önce bir görüntü yükleyin ve analiz edin" : "Yayını başlat"}
-            >
-              Yayını Başlat
-            </button>
-            <button onClick={stopStreaming}>
-              Yayını Durdur
-            </button>
-          </>
-        )}
       </div>
     </section>
   );

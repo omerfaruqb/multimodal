@@ -30,12 +30,30 @@ if (typeof API_KEY !== "string") {
 const host = "generativelanguage.googleapis.com";
 const uri = `wss://${host}/ws/google.ai.generativelanguage.v1alpha.GenerativeService.BidiGenerateContent`;
 
+export interface AIResponse {
+  content: string;
+  timestamp: number;
+  imageData?: {
+    base64: string;
+    mimeType: string;
+  };
+}
+
 function App() {
   // this video reference is used for displaying the active stream, whether that is the webcam or screen capture
   // feel free to style as you see fit
   const videoRef = useRef<HTMLVideoElement>(null);
   // either the screen capture, the video or null, if null we hide it
   const [videoStream, setVideoStream] = useState<MediaStream | null>(null);
+  const [aiResponse, setAIResponse] = useState<AIResponse | null>(null);
+
+  const handleAIResponse = (response: string, imageData?: { base64: string; mimeType: string }) => {
+    setAIResponse({
+      content: response,
+      timestamp: Date.now(),
+      imageData
+    });
+  };
 
   return (
     <div className="App">
@@ -45,7 +63,10 @@ function App() {
           <main>
             <div className="main-app-area">
               <div className="content-container">
-                <ImageChat />
+                <ImageChat 
+                  aiResponse={aiResponse} 
+                  onAIResponse={handleAIResponse}
+                />
               </div>
               <video
                 className={cn("stream", {
@@ -61,6 +82,7 @@ function App() {
               videoRef={videoRef}
               supportsVideo={true}
               onVideoStreamChange={setVideoStream}
+              aiResponse={aiResponse}
             >
               {/* put your own buttons here */}
             </ControlTray>

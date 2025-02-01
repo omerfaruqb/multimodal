@@ -24,12 +24,14 @@ import { useWebcam } from "../../hooks/use-webcam";
 import { AudioRecorder } from "../../lib/audio-recorder";
 import AudioPulse from "../audio-pulse/AudioPulse";
 import "./control-tray.scss";
+import { AIResponse } from '../../App';
 
 export type ControlTrayProps = {
   videoRef: RefObject<HTMLVideoElement>;
   children?: ReactNode;
   supportsVideo: boolean;
   onVideoStreamChange?: (stream: MediaStream | null) => void;
+  aiResponse: AIResponse | null;
 };
 
 type MediaStreamButtonProps = {
@@ -61,6 +63,7 @@ function ControlTray({
   children,
   onVideoStreamChange = () => {},
   supportsVideo,
+  aiResponse,
 }: ControlTrayProps) {
   const videoStreams = [useWebcam(), useScreenCapture()];
   const [activeVideoStream, setActiveVideoStream] =
@@ -71,15 +74,45 @@ function ControlTray({
   const [muted, setMuted] = useState(false);
   const renderCanvasRef = useRef<HTMLCanvasElement>(null);
   const connectButtonRef = useRef<HTMLButtonElement>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const previousConnectedState = useRef(false);
 
   const { client, connected, connect, disconnect, volume } =
     useLiveAPIContext();
+
+  // Handle initial connection and AI response
+  useEffect(() => {
+    if (connected && !previousConnectedState.current && aiResponse) {
+      // Send initial context when streaming starts
+      const parts = [];
+
+      // Add the text prompt
+      parts.push({
+        text: `Önceki görüntü analizi: ${aiResponse.content}\n\nŞimdi, lütfen video akışını analiz et ve görüntü analizine dayanarak içgörüler sağla.`
+      });
+
+      // Add the image if available
+      if (aiResponse.imageData) {
+        parts.push({
+          inlineData: {
+            data: aiResponse.imageData.base64,
+            mimeType: aiResponse.imageData.mimeType
+          }
+        });
+      }
+
+      // Send both text and image
+      client.send(parts, true);
+    }
+    previousConnectedState.current = connected;
+  }, [connected, aiResponse, client]);
 
   useEffect(() => {
     if (!connected && connectButtonRef.current) {
       connectButtonRef.current.focus();
     }
   }, [connected]);
+
   useEffect(() => {
     document.documentElement.style.setProperty(
       "--volume",
@@ -88,23 +121,62 @@ function ControlTray({
   }, [inVolume]);
 
   useEffect(() => {
-    const onData = (base64: string) => {
-      client.sendRealtimeInput([
-        {
-          mimeType: "audio/pcm;rate=16000",
-          data: base64,
-        },
-      ]);
+    const onData = async (base64: string) => {
+      try {
+        await client.sendRealtimeInput([
+          {
+            mimeType: "audio/pcm;rate=16000",
+            data: base64,
+          },
+        ]);
+      } catch (error) {
+        console.error('Error sending audio data:', error);
+      }
     };
-    if (connected && !muted && audioRecorder) {
-      audioRecorder.on("data", onData).on("volume", setInVolume).start();
+
+    const startAudioRecording = async () => {
+      try {
+        // Request audio permissions explicitly
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        
+        if (connected && !muted && audioRecorder) {
+          await audioRecorder
+            .on("data", onData)
+            .on("volume", setInVolume)
+            .start();
+          console.log('Audio recording started successfully');
+        }
+      } catch (error) {
+        console.error('Error starting audio recording:', error);
+        setMuted(true); // Mute if there's an error
+      }
+    };
+
+    if (connected && !muted) {
+      startAudioRecording();
     } else {
       audioRecorder.stop();
     }
+
     return () => {
       audioRecorder.off("data", onData).off("volume", setInVolume);
     };
   }, [connected, client, muted, audioRecorder]);
+
+  // Add mic permission check
+  const handleMicToggle = async () => {
+    try {
+      if (muted) {
+        // Try to get audio permission before unmuting
+        await navigator.mediaDevices.getUserMedia({ audio: true });
+      }
+      setMuted(!muted);
+    } catch (error) {
+      console.error('Error accessing microphone:', error);
+      alert('Mikrofona erişilemiyor. Lütfen tarayıcı izinlerinizi kontrol edin.');
+      setMuted(true);
+    }
+  };
 
   useEffect(() => {
     if (videoRef.current) {
@@ -156,13 +228,66 @@ function ControlTray({
     videoStreams.filter((msr) => msr !== next).forEach((msr) => msr.stop());
   };
 
+  const startStreaming = async () => {
+    if (!videoRef.current || !aiResponse) return;
+
+    try {
+      // First, send the AI response as initial context
+      const initialPrompt = {
+        text: `Önceki görüntü analizi: ${aiResponse.content}\n\nŞimdi, lütfen video akışını analiz et ve görüntü analizine dayanarak içgörüler sağla.`
+      };
+
+      // Send initial prompt
+      client.send([initialPrompt], true);
+
+      // Start video streaming
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: true,
+        audio: false,
+      });
+
+      videoRef.current.srcObject = stream;
+      onVideoStreamChange(stream);
+
+      // Set up media recorder for streaming
+      const mediaRecorder = new MediaRecorder(stream);
+      mediaRecorderRef.current = mediaRecorder;
+
+      mediaRecorder.ondataavailable = async (event) => {
+        if (event.data.size > 0) {
+          const videoBlob = new Blob([event.data], { type: 'video/webm' });
+          // Process and send video data to the streaming service
+          // Add your streaming logic here
+        }
+      };
+
+      mediaRecorder.start(1000); // Collect data every second
+    } catch (error) {
+      console.error('Error starting stream:', error);
+    }
+  };
+
+  const stopStreaming = () => {
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+      mediaRecorderRef.current.stop();
+    }
+
+    if (videoRef.current?.srcObject) {
+      const tracks = (videoRef.current.srcObject as MediaStream).getTracks();
+      tracks.forEach(track => track.stop());
+      videoRef.current.srcObject = null;
+      onVideoStreamChange(null);
+    }
+  };
+
   return (
     <section className="control-tray">
       <canvas style={{ display: "none" }} ref={renderCanvasRef} />
       <nav className={cn("actions-nav", { disabled: !connected })}>
         <button
           className={cn("action-button mic-button")}
-          onClick={() => setMuted(!muted)}
+          onClick={handleMicToggle}
+          title={muted ? "Mikrofonu aç" : "Mikrofonu kapat"}
         >
           {!muted ? (
             <span className="material-symbols-outlined filled">mic</span>
@@ -172,7 +297,7 @@ function ControlTray({
         </button>
 
         <div className="action-button no-action outlined">
-          <AudioPulse volume={volume} active={connected} hover={false} />
+          <AudioPulse volume={volume} active={connected && !muted} hover={false} />
         </div>
 
         {supportsVideo && (
@@ -202,13 +327,32 @@ function ControlTray({
             ref={connectButtonRef}
             className={cn("action-button connect-toggle", { connected })}
             onClick={connected ? disconnect : connect}
+            disabled={!aiResponse}
+            title={!aiResponse ? "Önce bir görüntü yükleyin ve analiz edin" : "Yayını başlat/durdur"}
           >
             <span className="material-symbols-outlined filled">
               {connected ? "pause" : "play_arrow"}
             </span>
           </button>
         </div>
-        <span className="text-indicator">Streaming</span>
+        <span className="text-indicator">Yayın</span>
+      </div>
+
+      <div className="controls">
+        {supportsVideo && (
+          <>
+            <button 
+              onClick={startStreaming} 
+              disabled={!aiResponse}
+              title={!aiResponse ? "Önce bir görüntü yükleyin ve analiz edin" : "Yayını başlat"}
+            >
+              Yayını Başlat
+            </button>
+            <button onClick={stopStreaming}>
+              Yayını Durdur
+            </button>
+          </>
+        )}
       </div>
     </section>
   );

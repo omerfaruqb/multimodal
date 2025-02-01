@@ -1,0 +1,460 @@
+.image-chat {
+  width: 100%;
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  height: calc(100vh - 100px);
+
+  .setup-section {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    height: 100%;
+    position: relative;
+
+    .upload-section {
+      width: 100%;
+    }
+
+    .initial-input-section {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      background-color: var(--Neutral-10);
+      border-radius: 8px;
+      padding: 20px;
+
+      textarea {
+        flex: 1;
+        background-color: var(--Neutral-15);
+        border: 1px solid var(--Neutral-30);
+        border-radius: 8px;
+        padding: 12px;
+        color: var(--Neutral-90);
+        font-family: var(--font-family);
+        font-size: 14px;
+        resize: none;
+        min-height: 100px;
+        
+        &:focus {
+          outline: none;
+          border-color: var(--Blue-500);
+        }
+
+        &::placeholder {
+          color: var(--Neutral-50);
+        }
+      }
+
+      button {
+        align-self: flex-end;
+        background-color: var(--Blue-500);
+        color: white;
+        border: none;
+        padding: 12px 24px;
+        border-radius: 8px;
+        cursor: pointer;
+        font-family: var(--font-family);
+        font-size: 16px;
+        transition: background-color 0.3s ease;
+
+        &:hover {
+          background-color: var(--Blue-800);
+        }
+
+        &:disabled {
+          background-color: var(--Neutral-30);
+          cursor: not-allowed;
+        }
+      }
+    }
+
+    .loading-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: rgba(0, 0, 0, 0.7);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      border-radius: 8px;
+      backdrop-filter: blur(4px);
+      z-index: 10;
+
+      .loading-icon {
+        font-size: 32px;
+        color: var(--Blue-500);
+        animation: spin 1s linear infinite;
+      }
+
+      span {
+        color: var(--Neutral-90);
+        font-size: 16px;
+        font-family: var(--font-family);
+      }
+    }
+
+    .answer-section {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      background-color: var(--Neutral-10);
+      border-radius: 8px;
+      padding: 20px;
+      min-height: 400px;
+      overflow: hidden;
+
+      .images-preview {
+        display: flex;
+        gap: 12px;
+        padding: 12px;
+        background-color: var(--Neutral-15);
+        border-radius: 8px;
+        overflow-x: auto;
+        max-width: 100%;
+        scrollbar-width: thin;
+        scrollbar-color: var(--Neutral-30) var(--Neutral-15);
+
+        &::-webkit-scrollbar {
+          height: 6px;
+        }
+
+        &::-webkit-scrollbar-track {
+          background: var(--Neutral-15);
+          border-radius: 3px;
+        }
+
+        &::-webkit-scrollbar-thumb {
+          background: var(--Neutral-30);
+          border-radius: 3px;
+        }
+
+        .image-preview-item {
+          flex: 0 0 auto;
+          width: 120px;
+          height: 120px;
+          border-radius: 6px;
+          overflow: hidden;
+          border: 2px solid var(--Neutral-20);
+
+          img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+          }
+        }
+      }
+
+      .messages-container {
+        flex: 1;
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+        padding-right: 10px;
+
+        &::-webkit-scrollbar {
+          width: 6px;
+        }
+
+        &::-webkit-scrollbar-track {
+          background: var(--Neutral-15);
+          border-radius: 3px;
+        }
+
+        &::-webkit-scrollbar-thumb {
+          background: var(--Neutral-30);
+          border-radius: 3px;
+        }
+
+        .message {
+          display: flex;
+          flex-direction: column;
+          gap: 8px;
+          max-width: 80%;
+          
+          &.user {
+            align-self: flex-end;
+            
+            .message-content {
+              background-color: var(--Blue-500);
+              color: white;
+              border-radius: 12px 12px 2px 12px;
+            }
+          }
+          
+          &.assistant {
+            align-self: flex-start;
+            
+            .message-content {
+              background-color: var(--Neutral-20);
+              color: var(--Neutral-90);
+              border-radius: 12px 12px 12px 2px;
+            }
+          }
+
+          .message-content {
+            padding: 12px 16px;
+            font-size: 14px;
+            line-height: 1.5;
+            white-space: pre-wrap;
+            word-break: break-word;
+          }
+        }
+      }
+
+      .input-container {
+        display: flex;
+        gap: 12px;
+        padding-top: 12px;
+        border-top: 1px solid var(--Neutral-20);
+
+        textarea {
+          flex: 1;
+          background-color: var(--Neutral-15);
+          border: 1px solid var(--Neutral-30);
+          border-radius: 8px;
+          padding: 12px;
+          color: var(--Neutral-90);
+          font-family: var(--font-family);
+          font-size: 14px;
+          resize: none;
+          min-height: 44px;
+          max-height: 120px;
+          
+          &:focus {
+            outline: none;
+            border-color: var(--Blue-500);
+          }
+
+          &::placeholder {
+            color: var(--Neutral-50);
+          }
+        }
+
+        button {
+          background-color: var(--Blue-500);
+          color: white;
+          border: none;
+          padding: 0 20px;
+          border-radius: 8px;
+          cursor: pointer;
+          font-family: var(--font-family);
+          font-size: 14px;
+          transition: background-color 0.3s ease;
+          height: 44px;
+
+          &:hover {
+            background-color: var(--Blue-800);
+          }
+
+          &:disabled {
+            background-color: var(--Neutral-30);
+            cursor: not-allowed;
+          }
+        }
+      }
+    }
+
+    .start-chat-button {
+      align-self: center;
+      background-color: var(--Blue-500);
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-family: var(--font-family);
+      font-size: 16px;
+      transition: background-color 0.3s ease;
+
+      &:hover {
+        background-color: var(--Blue-800);
+      }
+
+      &:disabled {
+        background-color: var(--Neutral-30);
+        cursor: not-allowed;
+      }
+    }
+  }
+
+  @keyframes spin {
+    from {
+      transform: rotate(0deg);
+    }
+    to {
+      transform: rotate(360deg);
+    }
+  }
+
+  .chat-section {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    background-color: var(--Neutral-10);
+    border-radius: 8px;
+    padding: 20px;
+    min-height: 400px;
+
+    .images-preview {
+      display: flex;
+      gap: 12px;
+      padding: 12px;
+      background-color: var(--Neutral-15);
+      border-radius: 8px;
+      overflow-x: auto;
+      max-width: 100%;
+      scrollbar-width: thin;
+      scrollbar-color: var(--Neutral-30) var(--Neutral-15);
+
+      &::-webkit-scrollbar {
+        height: 6px;
+      }
+
+      &::-webkit-scrollbar-track {
+        background: var(--Neutral-15);
+        border-radius: 3px;
+      }
+
+      &::-webkit-scrollbar-thumb {
+        background: var(--Neutral-30);
+        border-radius: 3px;
+      }
+
+      .image-preview-item {
+        flex: 0 0 auto;
+        width: 120px;
+        height: 120px;
+        border-radius: 6px;
+        overflow: hidden;
+        border: 2px solid var(--Neutral-20);
+
+        img {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+        }
+      }
+    }
+
+    .messages-container {
+      flex: 1;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      padding-right: 10px;
+
+      &::-webkit-scrollbar {
+        width: 6px;
+      }
+
+      &::-webkit-scrollbar-track {
+        background: var(--Neutral-15);
+        border-radius: 3px;
+      }
+
+      &::-webkit-scrollbar-thumb {
+        background: var(--Neutral-30);
+        border-radius: 3px;
+      }
+
+      .message {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        max-width: 80%;
+        
+        &.user {
+          align-self: flex-end;
+          
+          .message-content {
+            background-color: var(--Blue-500);
+            color: white;
+            border-radius: 12px 12px 2px 12px;
+          }
+        }
+        
+        &.assistant {
+          align-self: flex-start;
+          
+          .message-content {
+            background-color: var(--Neutral-20);
+            color: var(--Neutral-90);
+            border-radius: 12px 12px 12px 2px;
+          }
+        }
+
+        .message-content {
+          padding: 12px 16px;
+          font-size: 14px;
+          line-height: 1.5;
+          white-space: pre-wrap;
+          word-break: break-word;
+        }
+      }
+    }
+
+    .input-container {
+      display: flex;
+      gap: 12px;
+      padding-top: 12px;
+      border-top: 1px solid var(--Neutral-20);
+
+      textarea {
+        flex: 1;
+        background-color: var(--Neutral-15);
+        border: 1px solid var(--Neutral-30);
+        border-radius: 8px;
+        padding: 12px;
+        color: var(--Neutral-90);
+        font-family: var(--font-family);
+        font-size: 14px;
+        resize: none;
+        min-height: 44px;
+        max-height: 120px;
+        
+        &:focus {
+          outline: none;
+          border-color: var(--Blue-500);
+        }
+
+        &::placeholder {
+          color: var(--Neutral-50);
+        }
+      }
+
+      button {
+        background-color: var(--Blue-500);
+        color: white;
+        border: none;
+        padding: 0 20px;
+        border-radius: 8px;
+        cursor: pointer;
+        font-family: var(--font-family);
+        font-size: 14px;
+        transition: background-color 0.3s ease;
+        height: 44px;
+
+        &:hover {
+          background-color: var(--Blue-800);
+        }
+
+        &:disabled {
+          background-color: var(--Neutral-30);
+          cursor: not-allowed;
+        }
+      }
+    }
+  }
+} 

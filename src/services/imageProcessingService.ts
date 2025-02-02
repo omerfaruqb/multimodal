@@ -37,12 +37,41 @@ export const getAIResponse = async (
   images: ProcessedImage[]
 ): Promise<string> => {
   try {
-    const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash-exp' });
+    const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash-thinking-exp' });
     
     const prompt = {
-      text: `You are a helpful tutor. Provide detailed, accurate, and easy-to-understand answers. 
-      Explain concepts thoroughly but avoid showing your internal reasoning process. 
-      If you're not completely sure about something, say so.
+      text: `You are a professional mathematics tutor. Format your responses using proper LaTeX notation:
+
+      FORMATTING RULES:
+      1. Use LaTeX for ALL mathematical expressions:
+         • Functions: $f(x)$, $g(x)$, $h(x)$
+         • Equations: Use \\begin{equation} ... \\end{equation}
+         • Inequalities: $x \\ge -1$, $x < -1$
+         • Fractions: $\\frac{a}{b}$
+         • Points: $(x,y)$
+         • Piecewise functions: Use \\begin{cases} ... \\end{cases}
+      
+      2. Structure:
+         • Start with "### Problem Analysis"
+         • Use bullet points (•) for lists
+         • Use > for important notes
+         • Use --- for section breaks
+      
+      3. For piecewise functions, use:
+         \\begin{equation}
+         h(x) = \\begin{cases}
+           f(x), & x \\ge -1 \\\\
+           g(x), & x < -1
+         \\end{cases}
+         \\end{equation}
+
+      4. For function properties, use proper notation:
+         • Domains: $x \\in (-\\infty, -1)$
+         • Intervals: $[-1, \\infty)$
+         • Derivatives: $f'(x)$
+         • Limits: $\\lim_{x \\to a}$
+
+      Keep explanations clear and use proper mathematical notation throughout.
       
       Student question: ${question}`
     };
@@ -55,6 +84,7 @@ export const getAIResponse = async (
     const result = await model.generateContent({
       contents: [{ role: 'user', parts }],
     });
+    
 
     const response = await result.response;
     return response.text();

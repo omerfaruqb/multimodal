@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { useLiveAPIContext } from '../../contexts/LiveAPIContext';
+import { useImageChatContext } from '../../contexts/ImageChatContext';
 import useImageUploadStore from '../../lib/stores/imageUploadStore';
 import ImageUpload from '../image-upload/ImageUpload';
 import './ImageChat.scss';
@@ -7,6 +7,8 @@ import { Part } from '@google/generative-ai';
 import { FiLoader } from 'react-icons/fi';
 import { processImages, getAIResponse } from '../../services/imageProcessingService';
 import { AIResponse } from '../../App';
+import katex from 'katex';
+import 'katex/dist/katex.min.css';
 
 interface ImageChatProps {
   aiResponse: AIResponse | null;
@@ -14,7 +16,7 @@ interface ImageChatProps {
 }
 
 const ImageChat: React.FC<ImageChatProps> = ({ aiResponse, onAIResponse }) => {
-  const { client, setConfig } = useLiveAPIContext();
+  const { client, connected } = useImageChatContext();
   const { images } = useImageUploadStore();
   const [messages, setMessages] = useState<Array<{ role: 'user' | 'assistant', content: string, isHidden?: boolean, isFinal?: boolean }>>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -23,29 +25,37 @@ const ImageChat: React.FC<ImageChatProps> = ({ aiResponse, onAIResponse }) => {
   const previousImagesLength = useRef(0);
   const lastResponseTimestamp = useRef<number>(0);
   const [finalAnswer, setFinalAnswer] = useState<string>('');
+  const previousConnectedState = useRef(connected);
 
+  // Handle initial connection and AI response
   useEffect(() => {
-    setConfig({
-      model: "models/gemini-2.0-flash-exp",
-      generationConfig: {
-        responseModalities: "audio",
-        speechConfig: {
-          voiceConfig: {
-            prebuiltVoiceConfig: {
-              voiceName: "Fenrir"
-            }
+    if (connected && !previousConnectedState.current && aiResponse) {
+      // Send initial context when streaming starts
+      const parts = [];
+
+      // Add the initial response prompt
+      parts.push({
+        text: `⁠User has sent you a question; use the provided solution to answer it. 
+        The original question is also given as image input to you. Before starting to solve the problem, 
+        ask the user if he/she has any spesific questions about the problem.
+        Solution: ${aiResponse.content}`
+      });
+
+      // Add the image if available
+      if (aiResponse.imageData) {
+        parts.push({
+          inlineData: {
+            data: aiResponse.imageData.base64,
+            mimeType: aiResponse.imageData.mimeType
           }
-        }
-      },
-      systemInstruction: {
-        parts: [
-          {
-            text: 'You are a helpful assistant. You can analyze images and provide detailed descriptions and insights.',
-          },
-        ],
-      },
-    });
-  }, [setConfig]);
+        });
+      }
+
+      // Send both text and image
+      client.send(parts, true);
+    }
+    previousConnectedState.current = connected;
+  }, [connected, aiResponse, client]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -73,7 +83,7 @@ const ImageChat: React.FC<ImageChatProps> = ({ aiResponse, onAIResponse }) => {
     setIsProcessing(true);
     try {
       const processedImages = await processImages(images.map(img => img.file));
-      const response = await getAIResponse("Please solve this problem and explain in detail", processedImages);
+      const response = await getAIResponse("Please solve this problem and explain in detail.", processedImages); 
       
       // Get the base64 data of the latest image
       const latestImage = images[images.length - 1];
@@ -114,10 +124,16 @@ const ImageChat: React.FC<ImageChatProps> = ({ aiResponse, onAIResponse }) => {
   const handleStreamResponse = (response: string, isFinal: boolean) => {
     setIsLoading(true);
     
+    // Add LaTeX formatting for piecewise functions
+    const formattedResponse = response.replace(
+      /h_(\d)\(x\)\s*=\s*\\begin\s*{cases}/g,
+      '$$h_$1(x) = \\begin{cases}'
+    ).replace(/\\end{cases}/g, '\\end{cases}$$');
+    
     // Directly set the complete response without artificial delays
     setMessages([{ 
       role: 'assistant', 
-      content: response.trim(), 
+      content: formattedResponse.trim(), 
       isFinal: true 
     }]);
     
@@ -125,12 +141,55 @@ const ImageChat: React.FC<ImageChatProps> = ({ aiResponse, onAIResponse }) => {
   };
 
   const formatMathText = (text: string) => {
-    // Replace *text* with proper italic styling
-    return text.replace(/\*(.*?)\*/g, '<em>$1</em>');
+    try {
+      // First, protect inline math with $ signs
+      text = text.replace(/\$([^$]+?)\$/g, (match, content) => {
+        try {
+          return katex.renderToString(content.trim(), {
+            displayMode: false,
+            throwOnError: false
+          });
+        } catch (e) {
+          console.error('KaTeX error:', e);
+          return content;
+        }
+      });
+
+      // Handle piecewise functions
+      text = text.replace(
+        /h\(x\)\s*=\s*\{([^}]+)\}/g,
+        `$$h(x) = \\begin{cases} f(x), & x \\geq -1 \\\\ g(x), & x < -1 \\end{cases}$$`
+      );
+
+      // Handle display math
+      text = text.replace(/\$\$(.*?)\$\$/gs, (match, content) => {
+        try {
+          return katex.renderToString(content.trim(), {
+            displayMode: true,
+            throwOnError: false
+          });
+        } catch (e) {
+          console.error('KaTeX error:', e);
+          return content;
+        }
+      });
+
+      // Format bullet points
+      text = text.replace(/^•\s*(.+)$/gm, '<li>$1</li>');
+      text = text.replace(/((?:<li>.*?<\/li>\s*)+)/g, '<ul>$1</ul>');
+
+      // Format headers
+      text = text.replace(/^###\s*(.+)$/gm, '<h3>$1</h3>');
+
+      return text;
+    } catch (e) {
+      console.error('Error in formatMathText:', e);
+      return text;
+    }
   };
 
   // Only show final messages
-  const visibleMessages = messages.filter(message => !message.isHidden && message.isFinal);
+  // const visibleMessages = messages.filter(message => !message.isHidden && message.isFinal);
 
   return (
     <div className="image-chat">
@@ -153,7 +212,7 @@ const ImageChat: React.FC<ImageChatProps> = ({ aiResponse, onAIResponse }) => {
           {(isLoading || isProcessing) && (
             <div className="loading-overlay">
               <FiLoader className="loading-icon" />
-              <span>{isProcessing ? 'Processing image...' : 'Generating analysis...'}</span>
+              <span>{isProcessing ? 'Processing image...' : 'Generating solution...'}</span>
             </div>
           )}
         </div>
@@ -170,7 +229,7 @@ const ImageChat: React.FC<ImageChatProps> = ({ aiResponse, onAIResponse }) => {
               <div 
                 className="final-answer-content"
                 dangerouslySetInnerHTML={{ 
-                  __html: finalAnswer ? formatMathText(finalAnswer) : 'Analysis in progress...'
+                  __html: finalAnswer ? formatMathText(finalAnswer) : 'Solving...'
                 }}
               />
             </div>

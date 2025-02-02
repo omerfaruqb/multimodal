@@ -107,66 +107,168 @@
 
         .final-answer-content {
           color: var(--Neutral-90);
-          font-size: 15px;
-          line-height: 1.7;
+          font-size: 14px;
+          line-height: 1.5;
           white-space: pre-wrap;
           word-break: break-word;
           background-color: var(--Neutral-15);
-          padding: 24px;
+          padding: 16px;
           border-radius: 8px;
           border: 1px solid var(--Neutral-20);
           height: calc(100% - 40px);
           overflow-y: auto;
 
-          strong, b {
-            color: var(--Blue-500);
+          h3 {
+            color: var(--Neutral-90);
+            margin: 1em 0 0.5em;
+            font-size: 1.1em;
             font-weight: 600;
+            border-bottom: 1px solid var(--Neutral-20);
+            padding-bottom: 0.2em;
           }
 
-          em, i {
-            color: var(--Neutral-80);
-            font-style: italic;
-          }
-
-          p {
-            margin: 0 0 16px 0;
-            &:last-child {
-              margin-bottom: 0;
-            }
-          }
-
-          ul, ol {
-            margin: 16px 0;
-            padding-left: 24px;
-
-            li {
-              margin-bottom: 8px;
-              &:last-child {
-                margin-bottom: 0;
+          .katex-display {
+            margin: 1.5em 0;
+            text-align: center;
+            
+            > .katex {
+              text-align: center;
+              font-size: 1.2em;
+              
+              .katex-html {
+                overflow-x: auto;
+                padding: 0.5em 0;
               }
             }
           }
 
-          h1, h2, h3, h4 {
-            color: var(--Blue-500);
-            margin: 24px 0 16px 0;
-            font-weight: 600;
-            &:first-child {
-              margin-top: 0;
+          .katex {
+            font-size: 1.1em;
+            
+            // Basic spacing
+            .mord { margin: 0 0.1em; }
+            .mbin { margin: 0 0.15em; }
+            .mrel { margin: 0 0.15em; }
+            .mopen { margin-right: 0.1em; }
+            .mclose { margin-left: 0.1em; }
+            
+            // Cases environment
+            .mspace { margin-right: 0.2em !important; }
+          }
+
+          // Lists and headers
+          ul {
+            margin: 0.5em 0;
+            padding-left: 1.5em;
+          }
+
+          .math-inline {
+            font-family: 'KaTeX', 'Times New Roman', serif;
+            background: transparent;
+            padding: 0 0.2em;
+            font-size: 1em;
+            white-space: nowrap;
+          }
+
+          .custom-list, .numbered-list {
+            padding-left: 0;
+            margin: 1em 0;
+            list-style-type: none;
+          }
+
+          .bullet-point {
+            position: relative;
+            padding-left: 1.2em;
+            margin: 0.2em 0;
+            line-height: 1.5;
+
+            &:before {
+              content: "•";
+              color: var(--Neutral-70);
+              position: absolute;
+              left: 0.3em;
+              font-weight: bold;
             }
           }
 
-          h1 { font-size: 20px; }
-          h2 { font-size: 18px; }
-          h3 { font-size: 16px; }
-          h4 { font-size: 15px; }
+          .numbered-item {
+            position: relative;
+            padding-left: 1.5em;
+            margin: 0.2em 0;
+            line-height: 1.5;
+            counter-increment: item;
 
-          code {
-            background-color: var(--Neutral-20);
-            padding: 2px 6px;
-            border-radius: 4px;
-            font-family: 'Space Mono', monospace;
-            font-size: 14px;
+            &:before {
+              content: counter(item) ".";
+              color: var(--Neutral-70);
+              position: absolute;
+              left: 0.3em;
+              font-weight: bold;
+            }
+          }
+
+          .insight-block {
+            background: var(--Neutral-10);
+            border-left: 3px solid var(--Neutral-50);
+            margin: 0.5em 0;
+            padding: 0.5em;
+            border-radius: 0 6px 6px 0;
+            display: flex;
+            align-items: flex-start;
+            gap: 0.6em;
+
+            .insight-icon {
+              font-size: 1.1em;
+              line-height: 1;
+            }
+
+            .insight-text {
+              flex: 1;
+              color: var(--Neutral-90);
+              font-size: 0.95em;
+            }
+          }
+
+          .section-divider {
+            border: none;
+            height: 2px;
+            background: linear-gradient(to right, var(--Neutral-20), transparent);
+            margin: 1em 0;
+          }
+
+          p {
+            margin: 0.4em 0;
+            line-height: 1.5;
+          }
+
+          strong {
+            color: var(--Neutral-90);
+            font-weight: 600;
+          }
+
+          table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1em 0;
+            background: var(--Neutral-10);
+            border-radius: 8px;
+            overflow: hidden;
+
+            th, td {
+              padding: 0.8em 1em;
+              border: 1px solid var(--Neutral-20);
+              text-align: left;
+            }
+
+            th {
+              background: var(--Neutral-30);
+              color: var(--Neutral-90);
+              font-weight: 600;
+            }
+
+            tr:nth-child(even) {
+              background: var(--Neutral-15);
+            }
           }
 
           &::-webkit-scrollbar {
@@ -181,6 +283,75 @@
           &::-webkit-scrollbar-thumb {
             background: var(--Neutral-30);
             border-radius: 3px;
+          }
+
+          .math-inline, .math-display {
+            .op {
+              margin: 0 0.2em;
+            }
+          }
+
+          // Improve equation number visibility
+          .equation-number {
+            float: right;
+            margin-top: -1em;
+            color: var(--Neutral-70);
+            font-weight: 500;
+            background: var(--Neutral-10);
+            padding: 0.2em 0.5em;
+            border-radius: 4px;
+            border: 1px solid var(--Neutral-20);
+          }
+
+          // Style for equation environments
+          .equation {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 1em 0;
+            position: relative;
+            
+            &::before {
+              content: "(";
+              margin-right: 0.3em;
+            }
+            
+            &::after {
+              content: ")";
+              margin-left: 0.3em;
+            }
+          }
+
+          // Style for cases environment
+          .cases {
+            display: table;
+            margin: 0 auto;
+            
+            .case {
+              display: table-row;
+              
+              .condition {
+                display: table-cell;
+                padding-left: 1em;
+                color: var(--Neutral-70);
+              }
+            }
+          }
+
+          // Style for fractions
+          .frac {
+            display: inline-block;
+            vertical-align: middle;
+            text-align: center;
+            
+            .num {
+              border-bottom: 1px solid currentColor;
+              padding: 0 0.1em;
+            }
+            
+            .den {
+              padding: 0 0.1em;
+            }
           }
         }
       }
@@ -219,7 +390,7 @@
 
     .loading-icon {
       font-size: 32px;
-      color: var(--Blue-500);
+      color: var(--Neutral-90);
       animation: spin 1s linear infinite;
     }
 

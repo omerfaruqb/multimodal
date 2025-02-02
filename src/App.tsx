@@ -17,6 +17,7 @@
 import { useRef, useState } from "react";
 import "./App.scss";
 import { LiveAPIProvider } from "./contexts/LiveAPIContext";
+import { ImageChatProvider } from "./contexts/ImageChatContext";
 import SidePanel from "./components/side-panel/SidePanel";
 import ControlTray from "./components/control-tray/ControlTray";
 import ImageChat from "./components/image-chat/ImageChat";
@@ -58,35 +59,37 @@ function App() {
   return (
     <div className="App">
       <LiveAPIProvider url={uri} apiKey={API_KEY}>
-        <div className="streaming-console">
-          <main>
-            <div className="main-app-area">
-              <div className="content-container">
-                <ImageChat 
-                  aiResponse={aiResponse} 
-                  onAIResponse={handleAIResponse}
+        <ImageChatProvider url={uri} apiKey={API_KEY}>
+          <div className="streaming-console">
+            <main>
+              <div className="main-app-area">
+                <div className="content-container">
+                  <ImageChat 
+                    aiResponse={aiResponse} 
+                    onAIResponse={handleAIResponse}
+                  />
+                </div>
+                <video
+                  className={cn("stream", {
+                    hidden: !videoRef.current || !videoStream,
+                  })}
+                  ref={videoRef}
+                  autoPlay
+                  playsInline
                 />
               </div>
-              <video
-                className={cn("stream", {
-                  hidden: !videoRef.current || !videoStream,
-                })}
-                ref={videoRef}
-                autoPlay
-                playsInline
-              />
-            </div>
 
-            <ControlTray
-              videoRef={videoRef}
-              supportsVideo={true}
-              onVideoStreamChange={setVideoStream}
-              aiResponse={aiResponse}
-            >
-              {/* put your own buttons here */}
-            </ControlTray>
-          </main>
-        </div>
+              <ControlTray
+                videoRef={videoRef}
+                supportsVideo={true}
+                onVideoStreamChange={setVideoStream}
+                aiResponse={aiResponse}
+              >
+                {/* put your own buttons here */}
+              </ControlTray>
+            </main>
+          </div>
+        </ImageChatProvider>
       </LiveAPIProvider>
     </div>
   );

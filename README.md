@@ -1,4 +1,4 @@
-# Mathematics Tutor with Gemini API
+# AI Solver with Gemini API
 
 A React-based web application that uses Google's Gemini API to provide mathematical tutoring with LaTeX formatting. This project is built on top of the [Multimodal Live API Web Console](https://github.com/google-gemini/multimodal-live-api-web-console).
 
